@@ -13,6 +13,10 @@ RUN npm ci
 
 COPY . .
 
+# Placeholder so lib/db.ts takes the postgres branch (not sqlite) during build.
+# Railway overrides DATABASE_URL at runtime with the real connection string.
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost/placeholder
+
 RUN npm run build
 
 EXPOSE 3000
