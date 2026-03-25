@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+  color-scheme: dark;
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ─── Accent colour themes ───────────────────────────────────────────────────
+   Tailwind v4 exposes colours as CSS custom properties (--color-indigo-600 etc.)
+   and utility classes use them via var(). Overriding them per data-theme remaps
+   every bg-indigo-*, text-indigo-*, border-indigo-* across all components.     */
+
+/* Indigo is the default — no overrides needed */
+:root, [data-theme="indigo"] {
+  --accent-hex: #4f46e5;
+}
+
+[data-theme="violet"] {
+  --accent-hex: #7c3aed;
+  --color-indigo-50:  var(--color-violet-50);
+  --color-indigo-100: var(--color-violet-100);
+  --color-indigo-200: var(--color-violet-200);
+  --color-indigo-300: var(--color-violet-300);
+  --color-indigo-400: var(--color-violet-400);
+  --color-indigo-500: var(--color-violet-500);
+  --color-indigo-600: var(--color-violet-600);
+  --color-indigo-700: var(--color-violet-700);
+  --color-indigo-800: var(--color-violet-800);
+  --color-indigo-900: var(--color-violet-900);
+  --color-indigo-950: var(--color-violet-950);
+}
+
+[data-theme="emerald"] {
+  --accent-hex: #059669;
+  --color-indigo-50:  var(--color-emerald-50);
+  --color-indigo-100: var(--color-emerald-100);
+  --color-indigo-200: var(--color-emerald-200);
+  --color-indigo-300: var(--color-emerald-300);
+  --color-indigo-400: var(--color-emerald-400);
+  --color-indigo-500: var(--color-emerald-500);
+  --color-indigo-600: var(--color-emerald-600);
+  --color-indigo-700: var(--color-emerald-700);
+  --color-indigo-800: var(--color-emerald-800);
+  --color-indigo-900: var(--color-emerald-900);
+  --color-indigo-950: var(--color-emerald-950);
+}
+
+[data-theme="rose"] {
+  --accent-hex: #e11d48;
+  --color-indigo-50:  var(--color-rose-50);
+  --color-indigo-100: var(--color-rose-100);
+  --color-indigo-200: var(--color-rose-200);
+  --color-indigo-300: var(--color-rose-300);
+  --color-indigo-400: var(--color-rose-400);
+  --color-indigo-500: var(--color-rose-500);
+  --color-indigo-600: var(--color-rose-600);
+  --color-indigo-700: var(--color-rose-700);
+  --color-indigo-800: var(--color-rose-800);
+  --color-indigo-900: var(--color-rose-900);
+  --color-indigo-950: var(--color-rose-950);
+}
+
+[data-theme="amber"] {
+  --accent-hex: #d97706;
+  --color-indigo-50:  var(--color-amber-50);
+  --color-indigo-100: var(--color-amber-100);
+  --color-indigo-200: var(--color-amber-200);
+  --color-indigo-300: var(--color-amber-300);
+  --color-indigo-400: var(--color-amber-400);
+  --color-indigo-500: var(--color-amber-500);
+  --color-indigo-600: var(--color-amber-600);
+  --color-indigo-700: var(--color-amber-700);
+  --color-indigo-800: var(--color-amber-800);
+  --color-indigo-900: var(--color-amber-900);
+  --color-indigo-950: var(--color-amber-950);
+}
+
+[data-theme="cyan"] {
+  --accent-hex: #0891b2;
+  --color-indigo-50:  var(--color-cyan-50);
+  --color-indigo-100: var(--color-cyan-100);
+  --color-indigo-200: var(--color-cyan-200);
+  --color-indigo-300: var(--color-cyan-300);
+  --color-indigo-400: var(--color-cyan-400);
+  --color-indigo-500: var(--color-cyan-500);
+  --color-indigo-600: var(--color-cyan-600);
+  --color-indigo-700: var(--color-cyan-700);
+  --color-indigo-800: var(--color-cyan-800);
+  --color-indigo-900: var(--color-cyan-900);
+  --color-indigo-950: var(--color-cyan-950);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #18181b; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-hex, #6366f1); }
+
+/* Text selection */
+::selection { background: var(--accent-hex, #4f46e5); color: #fff; }
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Floating orbs */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-24px) scale(1.04); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) scale(1.04); }
+  50% { transform: translateY(24px) scale(1); }
+}
+.animate-float { animation: float 9s ease-in-out infinite; }
+.animate-float-slow { animation: float-slow 12s ease-in-out infinite; }
+
+/* Gradient text — follows accent theme */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-indigo-400) 0%, var(--color-violet-400) 60%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer skeleton */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Dot grid for hero sections */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Card with accent glow on hover — follows active theme */
+.card-glow {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 0 1px var(--color-indigo-600), 0 24px 48px -14px rgba(0,0,0,0.85);
+}
+
+/* Gradient border: indigo → violet accent line on top edge */
+.panel-top-accent {
+  position: relative;
+}
+.panel-top-accent::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-indigo-600) 30%, var(--color-violet-500) 70%, transparent 100%);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Glass pill — for stat badges */
+.glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 9999px;
+  padding: 5px 14px;
+  font-size: 12px;
+  color: #a1a1aa;
+  backdrop-filter: blur(8px);
+}
+
+/* Gradient button — follows theme, use as extra class alongside bg-indigo-600 */
+.btn-glow {
+  box-shadow: 0 4px 20px -4px var(--accent-hex, #4f46e5);
+  transition: box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-glow:hover {
+  box-shadow: 0 6px 28px -4px var(--accent-hex, #4f46e5);
+  filter: brightness(1.08);
+}
+.btn-glow:disabled { box-shadow: none; filter: none; }
+
+/* Shine sweep animation for cards */
+@keyframes shine {
+  0%   { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+.card-shine::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+  pointer-events: none;
+}
+.card-shine:hover::after {
+  animation: shine 0.6s ease forwards;
+}
+
+/* Gradient text (price / hero accent) */
+.gradient-text-accent {
+  background: linear-gradient(135deg, var(--color-indigo-400) 0%, var(--color-violet-400) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle noise overlay — apply relative+overflow-hidden to parent */
+.noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.4;
+}
