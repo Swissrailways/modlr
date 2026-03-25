@@ -3,11 +3,8 @@ generator client {
   output   = "../app/generated/prisma"
 }
 
-// Local dev (SQLite): DATABASE_URL=file:./dev.db — keep provider="sqlite"
-// Production (PostgreSQL): change provider to "postgresql" and set DATABASE_URL=postgresql://...
-// Then run: prisma generate && prisma migrate deploy
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
