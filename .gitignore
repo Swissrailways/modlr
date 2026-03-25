@@ -44,3 +44,12 @@ next-env.d.ts
 
 # Uploaded files
 /uploads
+
+# Local database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Misc
+null
