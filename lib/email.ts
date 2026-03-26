@@ -1,35 +1,39 @@
+import nodemailer from 'nodemailer'
+
+function getTransporter() {
+  const host = process.env.SMTP_HOST
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
+
+  if (!host || !user || !pass) return null
+
+  return nodemailer.createTransport({
+    host,
+    port: parseInt(process.env.SMTP_PORT ?? '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user, pass },
+  })
+}
+
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.SMTP_FROM ?? 'onboarding@resend.dev'
+  const transporter = getTransporter()
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@modlr.app'
   const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
 
-  if (!apiKey) {
-    // Dev fallback — print to console
-    console.log(`\n========== EMAIL (no RESEND_API_KEY configured) ==========`)
+  if (!transporter) {
+    console.log(`\n========== EMAIL (no SMTP configured) ==========`)
     console.log(`To: ${to}\nSubject: ${subject}`)
-    console.log('==========================================================\n')
+    console.log('=================================================\n')
     return true
   }
 
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: `${appName} <${from}>`,
-        to: [to],
-        subject,
-        html,
-      }),
+    await transporter.sendMail({
+      from: `"${appName}" <${from}>`,
+      to,
+      subject,
+      html,
     })
-    if (!res.ok) {
-      const err = await res.text()
-      console.error('Resend API error:', err)
-      return false
-    }
     return true
   } catch (err) {
     console.error('Failed to send email:', err)
