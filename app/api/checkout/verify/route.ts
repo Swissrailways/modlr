@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { stripe, stripeConfigured } from '@/lib/stripe'
+import { getStripe, stripeConfigured } from '@/lib/stripe'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Retrieve the session from Stripe (source of truth)
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    const session = await getStripe().checkout.sessions.retrieve(sessionId)
 
     if (session.payment_status !== 'paid') {
       return Response.json({ paid: false, error: 'Payment not completed' }, { status: 402 })

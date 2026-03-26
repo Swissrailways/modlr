@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
-import { stripe, stripeConfigured } from '@/lib/stripe'
+import { getStripe, stripeConfigured } from '@/lib/stripe'
 
 export async function POST(
   req: NextRequest,
@@ -43,7 +43,7 @@ export async function POST(
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
 
     // All payments go to platform — seller payout handled separately
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: 'payment',
       line_items: [{
         price_data: {
