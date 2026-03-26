@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           // Unverified but token still valid — resend the email
           const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
           const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${latestToken.token}`
-          sendVerificationEmail(cleanEmail, verifyUrl).catch(err => console.error('Failed to send verification email:', err))
+          await sendVerificationEmail(cleanEmail, verifyUrl)
           return Response.json({ requiresVerification: true, email: cleanEmail }, { status: 200 })
         }
       } else {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`
-    sendVerificationEmail(user.email, verifyUrl).catch(err => console.error('Failed to send verification email:', err))
+    await sendVerificationEmail(user.email, verifyUrl)
 
     return Response.json({ requiresVerification: true, email: user.email }, { status: 201 })
   } catch (err) {

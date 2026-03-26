@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const resetUrl = `${baseUrl}/reset-password?token=${token}`
 
-  sendPasswordResetEmail(user.email, resetUrl).catch(err => console.error('Failed to send password reset email:', err))
+  await sendPasswordResetEmail(user.email, resetUrl)
 
   return NextResponse.json({ ok: true })
 }
