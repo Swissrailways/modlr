@@ -7,7 +7,7 @@ import { stripe, stripeConfigured } from '@/lib/stripe'
 const PLATFORM_FEE_PERCENT = 10
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser()
@@ -42,7 +42,7 @@ export async function POST(
 
     // Paid product — Stripe must be configured and seller must have Connect set up
     if (!stripeConfigured()) {
-      return Response.json({ error: 'Payments are not configured on this server yet.' }, { status: 503 })
+      return Response.json({ error: 'Payments are not available right now. Please try again later.' }, { status: 503 })
     }
     if (!product.shop.stripeAccountId || !product.shop.stripeAccountComplete) {
       return Response.json({
@@ -50,7 +50,8 @@ export async function POST(
       }, { status: 402 })
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+      ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
 
     // Platform fee in cents
     const platformFee = Math.round(product.price * PLATFORM_FEE_PERCENT / 100)
@@ -70,12 +71,11 @@ export async function POST(
         quantity: 1,
       }],
         payment_intent_data: {
-        // In live mode: transfer to seller minus platform fee
-        // In test mode: skip transfer_data if account lacks capabilities
-        ...(process.env.NODE_ENV !== 'production' ? {} : {
+        // Only use Connect transfer when using a live key (not test mode)
+        ...((process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_live_') ? {
           transfer_data: { destination: product.shop.stripeAccountId },
           application_fee_amount: platformFee,
-        }),
+        } : {}),
       },
       metadata: { userId: String(user.id), productId: String(productId) },
       success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -83,8 +83,12 @@ export async function POST(
     })
 
     return Response.json({ url: session.url })
-  } catch (err) {
-    console.error('POST /api/checkout/[id] error:', err)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('POST /api/checkout/[id] error:', msg)
+    if (msg.includes('STRIPE_SECRET_KEY')) {
+      return Response.json({ error: 'Payments are not available right now.' }, { status: 503 })
+    }
     return Response.json({ error: 'Checkout failed' }, { status: 500 })
   }
 }
