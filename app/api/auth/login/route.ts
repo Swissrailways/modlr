@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } })
+    const user = await prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+      include: { _count: { select: { emailVerificationTokens: true } } },
+    })
     if (!user) {
       return Response.json({ error: 'Invalid email or password' }, { status: 401 })
     }
@@ -41,7 +44,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user.emailVerified) {
-      return Response.json({ error: 'Please verify your email before logging in.', requiresVerification: true }, { status: 403 })
+      // Auto-verify users who registered before email verification was introduced
+      // (they have no verification tokens on record)
+      if (user._count.emailVerificationTokens === 0) {
+        await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
+      } else {
+        return Response.json({ error: 'Please verify your email before logging in.', requiresVerification: true }, { status: 403 })
+      }
     }
 
     const session = await getSession()
