@@ -24,36 +24,55 @@ export async function POST(request: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
     const userId = parseInt((session.metadata as any)?.userId ?? '')
-    const productId = parseInt((session.metadata as any)?.productId ?? '')
+    const isCart = (session.metadata as any)?.cartCheckout === 'true'
 
-    if (isNaN(userId) || isNaN(productId)) {
-      console.error('Webhook: missing userId or productId in session metadata', session.id)
+    if (isNaN(userId)) {
+      console.error('Webhook: missing userId in session metadata', session.id)
       return Response.json({ received: true })
     }
 
-    // Verify the payment actually succeeded
     if (session.payment_status !== 'paid') {
       console.log('Webhook: session not paid yet, skipping', session.id)
       return Response.json({ received: true })
     }
 
     try {
-      // Upsert so duplicate webhook deliveries are safe (idempotent)
-      await prisma.purchase.upsert({
-        where: { userId_productId: { userId, productId } },
-        update: {},
-        create: {
-          userId,
-          productId,
-          amount: session.amount_total ?? 0,
-          currency: session.currency ?? 'usd',
-          stripeSessionId: session.id,
-        },
-      })
-      console.log(`Purchase recorded: user=${userId} product=${productId} session=${session.id}`)
+      if (isCart) {
+        // Cart checkout — multiple products
+        const productIdsStr = (session.metadata as any)?.productIds ?? ''
+        const productIds = productIdsStr.split(',').map(Number).filter((n: number) => !isNaN(n))
+        const perItem = Math.round((session.amount_total ?? 0) / productIds.length)
+        await prisma.purchase.createMany({
+          data: productIds.map((productId: number) => ({
+            userId, productId,
+            amount: perItem,
+            currency: session.currency ?? 'usd',
+            stripeSessionId: `${session.id}_${productId}`,
+          })),
+          skipDuplicates: true,
+        })
+        console.log(`Cart purchase recorded: user=${userId} products=${productIdsStr} session=${session.id}`)
+      } else {
+        // Single product checkout
+        const productId = parseInt((session.metadata as any)?.productId ?? '')
+        if (isNaN(productId)) {
+          console.error('Webhook: missing productId in session metadata', session.id)
+          return Response.json({ received: true })
+        }
+        await prisma.purchase.upsert({
+          where: { userId_productId: { userId, productId } },
+          update: {},
+          create: {
+            userId, productId,
+            amount: session.amount_total ?? 0,
+            currency: session.currency ?? 'usd',
+            stripeSessionId: session.id,
+          },
+        })
+        console.log(`Purchase recorded: user=${userId} product=${productId} session=${session.id}`)
+      }
     } catch (err) {
       console.error('Webhook: failed to create purchase:', err)
-      // Return 500 so Stripe will retry the webhook
       return Response.json({ error: 'Failed to record purchase' }, { status: 500 })
     }
   }

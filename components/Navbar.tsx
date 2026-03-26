@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Search, LogOut, LayoutDashboard, BookOpen, User, Settings } from 'lucide-react'
+import { Search, LogOut, LayoutDashboard, BookOpen, User, Settings, ShoppingCart } from 'lucide-react'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { ModlrWordmark } from '@/components/ModlrLogo'
 import PreferencesMenu from '@/components/PreferencesMenu'
 import { useI18n } from '@/lib/i18n'
+import { useCart } from '@/lib/cart'
+import CartDrawer from '@/components/CartDrawer'
 
 interface NavUser {
   id: number
@@ -22,7 +24,9 @@ function NavbarInner() {
   const [user, setUser] = useState<NavUser | null | undefined>(undefined)
   const { t } = useI18n()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+  const { count: cartCount } = useCart()
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -161,9 +165,25 @@ function NavbarInner() {
               </Link>
             </>
           )}
+
+          {/* Cart button — always visible */}
+          <button
+            onClick={() => setCartOpen(true)}
+            className="relative p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.05] transition-colors"
+            aria-label="Open cart"
+          >
+            <ShoppingCart size={18} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
     </nav>
+
+    <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
   )
 }
 

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import { Download, ShoppingCart, CheckCircle, Tag, FolderOpen, Loader2, ChevronRight, HardDrive, BarChart2 } from 'lucide-react'
+import { Download, ShoppingCart, CheckCircle, Tag, FolderOpen, Loader2, ChevronRight, HardDrive, BarChart2, Plus, Check } from 'lucide-react'
 import { formatPrice, type ProductItem } from '@/components/ProductCard'
 import { formatBytes } from '@/lib/utils'
+import { useCart } from '@/lib/cart'
 
 interface ProductDetail extends ProductItem {
   filePath: string
@@ -19,6 +20,7 @@ export default function ProductPage() {
   const router = useRouter()
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const { addItem, isInCart } = useCart()
   const [buying, setBuying] = useState(false)
   const [buyingPaypal, setBuyingPaypal] = useState(false)
   const [buyError, setBuyError] = useState('')
@@ -271,6 +273,29 @@ export default function ProductPage() {
                   </a>
                 ) : (
                   <>
+                    {/* Add to Cart */}
+                    <button
+                      onClick={() => addItem({
+                        productId: product.id,
+                        name: product.name,
+                        price: product.price,
+                        currency: product.currency,
+                        shopName: product.shop.name,
+                        imageUrl: product.previewImages[0]?.url,
+                      })}
+                      disabled={isInCart(product.id)}
+                      className="flex items-center justify-center gap-2 w-full border border-zinc-700 hover:border-indigo-500/50 bg-zinc-800/50 hover:bg-zinc-800 disabled:opacity-60 text-zinc-300 hover:text-white font-medium py-2.5 rounded-xl transition-all text-sm mb-3"
+                    >
+                      {isInCart(product.id) ? <Check size={15} className="text-emerald-400" /> : <Plus size={15} />}
+                      {isInCart(product.id) ? 'Added to Cart' : 'Add to Cart'}
+                    </button>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-1 h-px bg-zinc-800" />
+                      <span className="text-zinc-600 text-xs">or buy now</span>
+                      <div className="flex-1 h-px bg-zinc-800" />
+                    </div>
+
                     {/* Stripe */}
                     <button
                       onClick={handleBuy}
