@@ -1,25 +1,44 @@
-import nodemailer from 'nodemailer'
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY
+  const from = process.env.SMTP_FROM ?? 'onboarding@resend.dev'
+  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
 
-function getTransporter() {
-  const host = process.env.SMTP_HOST
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
+  if (!apiKey) {
+    // Dev fallback — print to console
+    console.log(`\n========== EMAIL (no RESEND_API_KEY configured) ==========`)
+    console.log(`To: ${to}\nSubject: ${subject}`)
+    console.log('==========================================================\n')
+    return true
+  }
 
-  if (!host || !user || !pass) return null
-
-  return nodemailer.createTransport({
-    host,
-    port: parseInt(process.env.SMTP_PORT ?? '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: { user, pass },
-  })
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `${appName} <${from}>`,
+        to: [to],
+        subject,
+        html,
+      }),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      console.error('Resend API error:', err)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Failed to send email:', err)
+    return false
+  }
 }
 
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
-  const transporter = getTransporter()
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@3dmarket.local'
   const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
-
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#18181b;color:#fff;border-radius:12px;padding:32px;">
       <h2 style="margin:0 0 8px;font-size:22px;">Verify your email</h2>
@@ -36,34 +55,11 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
       </p>
     </div>
   `
-
-  if (!transporter) {
-    console.log('\n========== EMAIL VERIFICATION LINK (no SMTP configured) ==========')
-    console.log(`To: ${to}`)
-    console.log(`URL: ${verifyUrl}`)
-    console.log('===================================================================\n')
-    return true
-  }
-
-  try {
-    await transporter.sendMail({
-      from: `"${appName}" <${from}>`,
-      to,
-      subject: `Verify your ${appName} email address`,
-      html,
-    })
-    return true
-  } catch (err) {
-    console.error('Failed to send verification email:', err)
-    return false
-  }
+  return sendEmail(to, `Verify your ${appName} email address`, html)
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
-  const transporter = getTransporter()
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@3dmarket.local'
   const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
-
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#18181b;color:#fff;border-radius:12px;padding:32px;">
       <h2 style="margin:0 0 8px;font-size:22px;">Reset your password</h2>
@@ -80,26 +76,5 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
       </p>
     </div>
   `
-
-  if (!transporter) {
-    // Dev fallback — print to console when SMTP isn't configured
-    console.log('\n========== PASSWORD RESET LINK (no SMTP configured) ==========')
-    console.log(`To: ${to}`)
-    console.log(`URL: ${resetUrl}`)
-    console.log('==============================================================\n')
-    return true
-  }
-
-  try {
-    await transporter.sendMail({
-      from: `"${appName}" <${from}>`,
-      to,
-      subject: `Reset your ${appName} password`,
-      html,
-    })
-    return true
-  } catch (err) {
-    console.error('Failed to send reset email:', err)
-    return false
-  }
+  return sendEmail(to, `Reset your ${appName} password`, html)
 }
