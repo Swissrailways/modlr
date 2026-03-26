@@ -12,16 +12,16 @@ export async function POST(req: NextRequest) {
     visitorId = crypto.randomUUID()
   }
 
-  await prisma.activeVisitor.upsert({
-    where: { id: visitorId },
-    update: { path: path ?? '/', lastSeen: new Date() },
-    create: { id: visitorId, path: path ?? '/' },
-  })
-
-  // Clean up visitors older than 5 minutes
-  await prisma.activeVisitor.deleteMany({
-    where: { lastSeen: { lt: new Date(Date.now() - 5 * 60 * 1000) } },
-  })
+  try {
+    await prisma.activeVisitor.upsert({
+      where: { id: visitorId },
+      update: { path: path ?? '/', lastSeen: new Date() },
+      create: { id: visitorId, path: path ?? '/' },
+    })
+    await prisma.activeVisitor.deleteMany({
+      where: { lastSeen: { lt: new Date(Date.now() - 5 * 60 * 1000) } },
+    })
+  } catch { /* table may not exist yet */ }
 
   return Response.json({ ok: true }, {
     headers: { 'Set-Cookie': `vid=${visitorId}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax` },
