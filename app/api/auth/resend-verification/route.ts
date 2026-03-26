@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       })
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
       const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`
-      await sendVerificationEmail(user.email, verifyUrl)
+      sendVerificationEmail(user.email, verifyUrl).catch(err => console.error('Failed to send verification email:', err))
     }
   } catch (err) {
     console.error('Resend verification error:', err)

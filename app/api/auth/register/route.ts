@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           // Unverified but token still valid — resend the email
           const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
           const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${latestToken.token}`
-          await sendVerificationEmail(cleanEmail, verifyUrl)
+          sendVerificationEmail(cleanEmail, verifyUrl).catch(err => console.error('Failed to send verification email:', err))
           return Response.json({ requiresVerification: true, email: cleanEmail }, { status: 200 })
         }
       } else {
@@ -66,10 +66,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check username separately
-    const existingByUsername = await prisma.user.findUnique({ where: { username: cleanUsername } })
+    // Check username separately — clean up ghost accounts (unverified + expired token)
+    const existingByUsername = await prisma.user.findUnique({
+      where: { username: cleanUsername },
+      include: { emailVerificationTokens: { orderBy: { createdAt: 'desc' }, take: 1 } },
+    })
     if (existingByUsername) {
-      return Response.json({ error: 'This username is already taken' }, { status: 409 })
+      if (!existingByUsername.emailVerified) {
+        const latestToken = existingByUsername.emailVerificationTokens[0]
+        const tokenExpired = !latestToken || latestToken.expiresAt < new Date()
+        if (tokenExpired) {
+          // Ghost account — delete and free up the username
+          await prisma.user.delete({ where: { id: existingByUsername.id } })
+        } else {
+          return Response.json({ error: 'This username is already taken' }, { status: 409 })
+        }
+      } else {
+        return Response.json({ error: 'This username is already taken' }, { status: 409 })
+      }
     }
 
     const hashed = await bcrypt.hash(password, 12)
@@ -89,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`
-    await sendVerificationEmail(user.email, verifyUrl)
+    sendVerificationEmail(user.email, verifyUrl).catch(err => console.error('Failed to send verification email:', err))
 
     return Response.json({ requiresVerification: true, email: user.email }, { status: 201 })
   } catch (err) {
