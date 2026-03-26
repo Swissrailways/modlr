@@ -13,6 +13,9 @@ RUN npm ci
 
 COPY . .
 
+# Regenerate Prisma client after COPY . . to ensure it matches current schema
+RUN npx prisma generate
+
 # Placeholder so lib/db.ts takes the postgres branch during build.
 # Railway overrides DATABASE_URL at runtime with the real connection string.
 ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost/placeholder
