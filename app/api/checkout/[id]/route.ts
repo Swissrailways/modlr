@@ -40,6 +40,11 @@ export async function POST(
       return Response.json({ error: 'Payments are not available right now.' }, { status: 503 })
     }
 
+    // Stripe minimum charge is 50 cents / 50 rappen in any currency
+    if (product.price < 50) {
+      return Response.json({ error: 'Product price is below the minimum charge amount ($0.50). Please update the product price.' }, { status: 422 })
+    }
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
 
     // All payments go to platform — seller payout handled separately
@@ -65,6 +70,6 @@ export async function POST(
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[checkout] error:', msg)
-    return Response.json({ error: 'Checkout failed' }, { status: 500 })
+    return Response.json({ error: msg || 'Checkout failed' }, { status: 500 })
   }
 }
