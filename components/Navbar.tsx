@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Search, LogOut, LayoutDashboard, BookOpen, User } from 'lucide-react'
-import { useState, useEffect, Suspense } from 'react'
+import { Search, LogOut, LayoutDashboard, BookOpen, User, Settings } from 'lucide-react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { ModlrWordmark } from '@/components/ModlrLogo'
 import PreferencesMenu from '@/components/PreferencesMenu'
 import { useI18n } from '@/lib/i18n'
@@ -21,6 +21,18 @@ function NavbarInner() {
   const [query, setQuery] = useState('')
   const [user, setUser] = useState<NavUser | null | undefined>(undefined)
   const { t } = useI18n()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   useEffect(() => {
     setQuery(searchParams.get('q') ?? '')
@@ -100,19 +112,38 @@ function NavbarInner() {
                 <span className="hidden sm:inline">{t.nav.library}</span>
               </Link>
 
-              <div className="flex items-center gap-2 ml-1 pl-3 border-l border-zinc-800">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
-                  <User size={13} className="text-white" />
-                </div>
-                <span className="hidden md:inline text-sm text-zinc-300 font-medium">{user.username}</span>
+              <div ref={profileRef} className="relative ml-1 pl-3 border-l border-zinc-800">
+                <button
+                  onClick={() => setProfileOpen(o => !o)}
+                  className="flex items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-white/[0.05] transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+                    <User size={13} className="text-white" />
+                  </div>
+                  <span className="hidden md:inline text-sm text-zinc-300 font-medium">{user.username}</span>
+                </button>
+
+                {profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl shadow-black/40 py-1 z-50">
+                    <Link
+                      href="/dashboard/account"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/[0.05] transition-colors"
+                    >
+                      <Settings size={14} className="text-zinc-500" />
+                      Account settings
+                    </Link>
+                    <div className="my-1 border-t border-zinc-800" />
+                    <button
+                      onClick={() => { setProfileOpen(false); handleLogout() }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/[0.06] transition-colors"
+                    >
+                      <LogOut size={14} />
+                      {t.nav.logout}
+                    </button>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="ml-1 p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/[0.08] transition-colors"
-                title={t.nav.logout}
-              >
-                <LogOut size={15} />
-              </button>
             </>
           ) : (
             <>
