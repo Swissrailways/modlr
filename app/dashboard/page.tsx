@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import { Plus, Store, Package, Pencil, Trash2, Eye, EyeOff, Loader2, CreditCard, CheckCircle, AlertTriangle, Download, ExternalLink, Settings } from 'lucide-react'
+import { Plus, Store, Package, Pencil, Trash2, Eye, EyeOff, Loader2, CreditCard, CheckCircle, AlertTriangle, Download, ExternalLink, Settings, UserCog } from 'lucide-react'
 import { formatPrice } from '@/components/ProductCard'
 import { formatBytes } from '@/lib/utils'
 
@@ -123,6 +123,13 @@ export default function DashboardPage() {
                 <Plus size={18} />
                 Create Shop
               </Link>
+              <Link
+                href="/dashboard/account"
+                className="inline-flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm mt-4 transition-colors"
+              >
+                <UserCog size={13} />
+                Account settings
+              </Link>
             </div>
           </div>
         )}
@@ -151,6 +158,13 @@ export default function DashboardPage() {
                   >
                     <Settings size={13} />
                     Edit shop
+                  </Link>
+                  <Link
+                    href="/dashboard/account"
+                    className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm transition-colors"
+                  >
+                    <UserCog size={13} />
+                    Account
                   </Link>
                 </div>
               </div>
