@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
+    if (!user.emailVerified) {
+      return Response.json({ error: 'Please verify your email before logging in.', requiresVerification: true }, { status: 403 })
+    }
+
     const session = await getSession()
     session.userId = user.id
     session.username = user.username

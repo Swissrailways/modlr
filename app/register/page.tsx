@@ -25,8 +25,13 @@ export default function RegisterPage() {
         body: JSON.stringify({ username, email, password }),
       })
       if (res.ok) {
-        router.push('/dashboard')
-        router.refresh()
+        const data = await res.json()
+        if (data.requiresVerification) {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+        } else {
+          router.push('/dashboard')
+          router.refresh()
+        }
       } else {
         const data = await res.json()
         setError(data.error || 'Registration failed')

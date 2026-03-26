@@ -28,8 +28,12 @@ export default function LoginPage() {
         router.refresh()
       } else {
         const data = await res.json()
-        setError(data.error || 'Login failed')
-        setLoading(false)
+        if (data.requiresVerification) {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+        } else {
+          setError(data.error || 'Login failed')
+          setLoading(false)
+        }
       }
     } catch {
       setError('Connection error. Please try again.')

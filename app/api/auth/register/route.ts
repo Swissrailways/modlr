@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { prisma } from '@/lib/db'
-import { getSession } from '@/lib/session'
 import { rateLimit } from '@/lib/rateLimit'
+import { sendVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   // Rate limit: 5 registrations per IP per hour
@@ -52,13 +53,21 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const session = await getSession()
-    session.userId = user.id
-    session.username = user.username
-    session.email = user.email
-    await session.save()
+    // Create verification token (24 hour expiry)
+    const token = crypto.randomBytes(32).toString('hex')
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    })
 
-    return Response.json({ id: user.id, username: user.username, email: user.email }, { status: 201 })
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
+    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`
+    await sendVerificationEmail(user.email, verifyUrl)
+
+    return Response.json({ requiresVerification: true, email: user.email }, { status: 201 })
   } catch (err) {
     console.error('Register error:', err)
     return Response.json({ error: 'Registration failed' }, { status: 500 })
