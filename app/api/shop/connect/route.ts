@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { stripe, stripeConfigured } from '@/lib/stripe'
+import { getStripe, stripeConfigured } from '@/lib/stripe'
 
 // POST — create or resume a Stripe Connect onboarding link
 export async function POST() {
@@ -20,7 +20,7 @@ export async function POST() {
     // Create a Stripe Express account if the seller doesn't have one yet
     let accountId = shop.stripeAccountId
     if (!accountId) {
-      const account = await stripe.accounts.create({ type: 'express' })
+      const account = await getStripe().accounts.create({ type: 'express' })
       accountId = account.id
       await prisma.shop.update({
         where: { id: shop.id },
@@ -29,7 +29,7 @@ export async function POST() {
     }
 
     // Generate a fresh onboarding link (they expire after a few minutes)
-    const accountLink = await stripe.accountLinks.create({
+    const accountLink = await getStripe().accountLinks.create({
       account: accountId,
       refresh_url: `${appUrl}/dashboard/connect/refresh`,
       return_url: `${appUrl}/dashboard/connect/return`,
@@ -63,7 +63,7 @@ export async function GET() {
     }
 
     // Live check with Stripe
-    const account = await stripe.accounts.retrieve(shop.stripeAccountId)
+    const account = await getStripe().accounts.retrieve(shop.stripeAccountId)
     const complete = !!(account.details_submitted && !(account.requirements?.currently_due?.length))
 
     // Sync to DB if status changed
