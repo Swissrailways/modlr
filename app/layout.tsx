@@ -36,7 +36,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <meta name="google-site-verification" content="XNv0lg3qkY0Y02Fi3ukm1voWVh0Up3prKJ7mgzsP2a4" />
         {/* Apply saved theme before first paint to prevent colour flash */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('modlr-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()` }} />
       </head>
