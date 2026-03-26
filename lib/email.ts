@@ -1,39 +1,37 @@
-import nodemailer from 'nodemailer'
-
-function getTransporter() {
-  const host = process.env.SMTP_HOST
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-
-  if (!host || !user || !pass) return null
-
-  return nodemailer.createTransport({
-    host,
-    port: parseInt(process.env.SMTP_PORT ?? '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: { user, pass },
-  })
-}
+const BREVO_API_KEY = process.env.BREVO_API_KEY
+const SMTP_FROM = process.env.SMTP_FROM ?? 'noreply@modlr.app'
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-  const transporter = getTransporter()
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@modlr.app'
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
-
-  if (!transporter) {
-    console.log(`\n========== EMAIL (no SMTP configured) ==========`)
+  if (!BREVO_API_KEY) {
+    console.log(`\n========== EMAIL (no Brevo API key configured) ==========`)
     console.log(`To: ${to}\nSubject: ${subject}`)
-    console.log('=================================================\n')
+    console.log('=========================================================\n')
     return true
   }
 
   try {
-    await transporter.sendMail({
-      from: `"${appName}" <${from}>`,
-      to,
-      subject,
-      html,
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: APP_NAME, email: SMTP_FROM },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+      signal: AbortSignal.timeout(15000),
     })
+
+    if (!res.ok) {
+      const err = await res.text()
+      console.error('Brevo API error:', res.status, err)
+      return false
+    }
+
     return true
   } catch (err) {
     console.error('Failed to send email:', err)
@@ -42,12 +40,11 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 }
 
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<boolean> {
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#18181b;color:#fff;border-radius:12px;padding:32px;">
       <h2 style="margin:0 0 8px;font-size:22px;">Verify your email</h2>
       <p style="color:#a1a1aa;margin:0 0 24px;">
-        Welcome to <strong style="color:#fff">${appName}</strong>! Click the button below to verify your email address.
+        Welcome to <strong style="color:#fff">${APP_NAME}</strong>! Click the button below to verify your email address.
         This link expires in <strong style="color:#fff">24 hours</strong>.
       </p>
       <a href="${verifyUrl}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
@@ -59,16 +56,15 @@ export async function sendVerificationEmail(to: string, verifyUrl: string): Prom
       </p>
     </div>
   `
-  return sendEmail(to, `Verify your ${appName} email address`, html)
+  return sendEmail(to, `Verify your ${APP_NAME} email address`, html)
 }
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#18181b;color:#fff;border-radius:12px;padding:32px;">
       <h2 style="margin:0 0 8px;font-size:22px;">Reset your password</h2>
       <p style="color:#a1a1aa;margin:0 0 24px;">
-        We received a request to reset your <strong style="color:#fff">${appName}</strong> password.
+        We received a request to reset your <strong style="color:#fff">${APP_NAME}</strong> password.
         Click the button below — this link expires in <strong style="color:#fff">1 hour</strong>.
       </p>
       <a href="${resetUrl}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px;">
@@ -80,5 +76,5 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
       </p>
     </div>
   `
-  return sendEmail(to, `Reset your ${appName} password`, html)
+  return sendEmail(to, `Reset your ${APP_NAME} password`, html)
 }
