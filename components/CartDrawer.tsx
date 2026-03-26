@@ -31,7 +31,7 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Checkout failed')
-        setCheckingOut(null)
+        setCheckingOut(false)
         return
       }
       if (data.url) {
