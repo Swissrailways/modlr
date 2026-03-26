@@ -130,6 +130,12 @@ function LoginContent() {
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
+
+              <div className="text-center">
+                <Link href="/forgot-password" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
             </form>
           )}
 
