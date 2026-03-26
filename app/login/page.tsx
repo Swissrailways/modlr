@@ -82,6 +82,13 @@ function LoginContent() {
             Continue with Discord
           </a>
 
+          {/* Forgot password */}
+          <div className="text-center">
+            <Link href="/forgot-password" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">
+              Forgot password? Reset via Discord
+            </Link>
+          </div>
+
           {/* Toggle for username/password */}
           <button
             type="button"
@@ -131,11 +138,6 @@ function LoginContent() {
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
 
-              <div className="text-center">
-                <Link href="/forgot-password" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
             </form>
           )}
 

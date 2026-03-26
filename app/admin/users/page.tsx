@@ -26,8 +26,13 @@ export default function AdminUsers() {
   async function handleDelete(id: number, username: string) {
     if (!confirm(`Delete user "${username}"? This removes their shop and all products.`)) return
     setDeleting(id)
-    await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
-    setUsers(prev => prev.filter(u => u.id !== id))
+    const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.id !== id))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? `Delete failed (${res.status})`)
+    }
     setDeleting(null)
   }
 
@@ -35,8 +40,13 @@ export default function AdminUsers() {
     if (!user.shop) return
     if (!confirm(`Delete shop "${user.shop.name}" and all its products? The user account will remain.`)) return
     setDeletingShop(user.shop.id)
-    await fetch(`/api/admin/shops/${user.shop.id}`, { method: 'DELETE' })
-    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, shop: null } : u))
+    const res = await fetch(`/api/admin/shops/${user.shop.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, shop: null } : u))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? `Delete failed (${res.status})`)
+    }
     setDeletingShop(null)
   }
 

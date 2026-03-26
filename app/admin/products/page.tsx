@@ -24,8 +24,13 @@ export default function AdminProducts() {
   async function handleDelete(id: number, name: string) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
     setDeleting(id)
-    await fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
-    setProducts(prev => prev.filter(p => p.id !== id))
+    const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setProducts(prev => prev.filter(p => p.id !== id))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? `Delete failed (${res.status})`)
+    }
     setDeleting(null)
   }
 
