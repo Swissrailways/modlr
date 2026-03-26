@@ -13,7 +13,10 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const { token, password } = await req.json()
+  let token: unknown, password: unknown
+  try { ({ token, password } = await req.json()) } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
   if (!token || typeof token !== 'string') {
     return NextResponse.json({ error: 'Invalid token' }, { status: 400 })

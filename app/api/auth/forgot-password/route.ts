@@ -15,7 +15,10 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const { email } = await req.json()
+  let email: unknown
+  try { ({ email } = await req.json()) } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
   if (!email || typeof email !== 'string') {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
