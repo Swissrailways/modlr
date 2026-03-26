@@ -18,7 +18,7 @@ export async function DELETE(request: NextRequest) {
     return Response.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 })
   }
 
-  let body: { password?: string }
+  let body: { password?: string; username?: string }
   try {
     body = await request.json()
   } catch {
@@ -31,7 +31,6 @@ export async function DELETE(request: NextRequest) {
       return Response.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Discord-only users have no password — skip password check
     if (user.password) {
       if (!body.password) {
         return Response.json({ error: 'Password is required to delete your account' }, { status: 400 })
@@ -39,6 +38,11 @@ export async function DELETE(request: NextRequest) {
       const valid = await bcrypt.compare(body.password, user.password)
       if (!valid) {
         return Response.json({ error: 'Incorrect password' }, { status: 403 })
+      }
+    } else {
+      // Discord users confirm with their username
+      if (!body.username || body.username.toLowerCase() !== user.username.toLowerCase()) {
+        return Response.json({ error: 'Username does not match' }, { status: 403 })
       }
     }
 

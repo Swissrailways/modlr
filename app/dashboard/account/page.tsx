@@ -1,27 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import { AlertTriangle, Lock, Trash2, ArrowLeft } from 'lucide-react'
+import { AlertTriangle, Lock, Trash2, ArrowLeft, User } from 'lucide-react'
 
 export default function AccountPage() {
   const router = useRouter()
-  const [password, setPassword] = useState('')
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null)
+  const [currentUsername, setCurrentUsername] = useState('')
+  const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      setHasPassword(d.hasPassword)
+      setCurrentUsername(d.username ?? '')
+    })
+  }, [])
 
   async function handleDelete(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
+      const body = hasPassword ? { password: value } : { username: value }
       const res = await fetch('/api/auth/account', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(body),
       })
       if (res.ok) {
         router.push('/?deleted=1')
@@ -36,6 +46,8 @@ export default function AccountPage() {
       setLoading(false)
     }
   }
+
+  const canSubmit = hasPassword ? !!value : value === currentUsername
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
@@ -73,16 +85,23 @@ export default function AccountPage() {
             <form onSubmit={handleDelete} className="space-y-4">
               <div className="bg-red-500/5 border border-red-500/20 rounded-xl px-4 py-3">
                 <p className="text-red-300 text-sm font-medium">This action is permanent and irreversible.</p>
-                <p className="text-red-400/70 text-xs mt-0.5">Enter your password to confirm.</p>
+                <p className="text-red-400/70 text-xs mt-0.5">
+                  {hasPassword
+                    ? 'Enter your password to confirm.'
+                    : `Type your username "${currentUsername}" to confirm.`}
+                </p>
               </div>
 
               <div className="relative">
-                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                {hasPassword
+                  ? <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  : <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                }
                 <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Your password"
+                  type={hasPassword ? 'password' : 'text'}
+                  value={value}
+                  onChange={e => setValue(e.target.value)}
+                  placeholder={hasPassword ? 'Your password' : currentUsername}
                   required
                   autoFocus
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 text-sm transition-all"
@@ -96,14 +115,14 @@ export default function AccountPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setConfirmed(false); setPassword(''); setError('') }}
+                  onClick={() => { setConfirmed(false); setValue(''); setError('') }}
                   className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium py-2.5 rounded-xl transition-all text-sm border border-zinc-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !password}
+                  disabled={loading || !canSubmit}
                   className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition-all text-sm"
                 >
                   {loading ? 'Deleting...' : 'Delete my account'}
