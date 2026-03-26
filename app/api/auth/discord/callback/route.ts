@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/session'
-import { exchangeDiscordCode, getDiscordUser } from '@/lib/discord'
+import { exchangeDiscordCode, getDiscordUser, sendDiscordDM } from '@/lib/discord'
 
 export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
@@ -10,6 +11,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const state = searchParams.get('state') ?? ''
 
   if (error || !code) {
     return Response.redirect(`${baseUrl}/login?error=discord_cancelled`)
@@ -18,6 +20,30 @@ export async function GET(request: NextRequest) {
   try {
     const tokens = await exchangeDiscordCode(code, redirectUri)
     const discordUser = await getDiscordUser(tokens.access_token)
+
+    // Password reset via Discord flow
+    if (state === 'password_reset') {
+      const user = await prisma.user.findFirst({ where: { discordId: discordUser.id } })
+      if (!user) {
+        return Response.redirect(`${baseUrl}/forgot-password?discord=not_found`)
+      }
+      // Invalidate existing tokens
+      await prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, used: false },
+        data: { used: true },
+      })
+      const token = randomBytes(32).toString('hex')
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+      await prisma.passwordResetToken.create({
+        data: { userId: user.id, token, expiresAt },
+      })
+      const resetUrl = `${baseUrl}/reset-password?token=${token}`
+      await sendDiscordDM(
+        discordUser.id,
+        `🔐 **Modlr Password Reset**\n\nClick the link below to reset your password. This link expires in **1 hour**.\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this message.`
+      )
+      return Response.redirect(`${baseUrl}/forgot-password?discord=sent`)
+    }
 
     // Build avatar URL
     const avatarUrl = discordUser.avatar

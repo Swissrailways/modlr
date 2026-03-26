@@ -7,11 +7,14 @@ export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
   const redirectUri = `${baseUrl}/api/auth/discord/callback`
 
+  const state = request.nextUrl.searchParams.get('state') ?? ''
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'identify email',
+    ...(state ? { state } : {}),
   })
 
   return Response.redirect(`https://discord.com/api/oauth2/authorize?${params}`)
