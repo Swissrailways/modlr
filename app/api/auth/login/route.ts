@@ -5,7 +5,6 @@ import { getSession } from '@/lib/session'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
-  // Rate limit: 10 attempts per IP per 15 minutes
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? request.headers.get('x-real-ip')
     ?? 'unknown'
@@ -17,43 +16,36 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let body: { email?: string; password?: string }
+  let body: { username?: string; password?: string }
   try {
     body = await request.json()
   } catch {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { email, password } = body
-  if (!email?.trim() || !password) {
-    return Response.json({ error: 'Email and password are required' }, { status: 400 })
+  const { username, password } = body
+  if (!username?.trim() || !password) {
+    return Response.json({ error: 'Username and password are required' }, { status: 400 })
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
-      include: { _count: { select: { emailVerificationTokens: true } } },
+    // Look up by username or email
+    const identifier = username.trim().toLowerCase()
+    const user = await prisma.user.findFirst({
+      where: { OR: [{ username: identifier }, { email: identifier }] },
     })
+
     if (!user) {
-      return Response.json({ error: 'Invalid email or password' }, { status: 401 })
+      return Response.json({ error: 'Invalid username or password' }, { status: 401 })
     }
 
     if (!user.password) {
       return Response.json({ error: 'This account uses Discord login. Please sign in with Discord.' }, { status: 401 })
     }
+
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
-      return Response.json({ error: 'Invalid email or password' }, { status: 401 })
-    }
-
-    if (!user.emailVerified) {
-      // Auto-verify users who registered before email verification was introduced
-      // (they have no verification tokens on record)
-      if (user._count.emailVerificationTokens === 0) {
-        await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } })
-      } else {
-        return Response.json({ error: 'Please verify your email before logging in.', requiresVerification: true }, { status: 403 })
-      }
+      return Response.json({ error: 'Invalid username or password' }, { status: 401 })
     }
 
     const session = await getSession()
