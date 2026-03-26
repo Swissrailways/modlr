@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  serverExternalPackages: ['stripe', 'bcryptjs', 'sharp'],
   async headers() {
     return [
       {

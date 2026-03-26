@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trash2, ShieldCheck, ShieldOff, Store, CheckCircle, XCircle } from 'lucide-react'
+import { Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, KeyRound, MessageSquare } from 'lucide-react'
 
 interface User {
-  id: number; email: string; username: string; isAdmin: boolean
+  id: number; email: string | null; username: string; isAdmin: boolean
   emailVerified: boolean; createdAt: string
+  discordId: string | null; discordUsername: string | null; discordAvatar: string | null
   _count: { purchases: number }
   shop: { name: string; slug: string; _count: { products: number } } | null
 }
@@ -14,6 +15,8 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [resetting, setResetting] = useState<number | null>(null)
+  const [resetMsg, setResetMsg] = useState<{ id: number; ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
     fetch('/api/admin/users').then(r => r.json()).then(setUsers).finally(() => setLoading(false))
@@ -36,9 +39,36 @@ export default function AdminUsers() {
     if (res.ok) setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isAdmin: !u.isAdmin } : u))
   }
 
+  async function handleResetPassword(user: User) {
+    if (!confirm(`Send a password reset to "${user.username}"${user.discordId ? ' via Discord DM' : ' via email'}?`)) return
+    setResetting(user.id)
+    setResetMsg(null)
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/reset-password`, { method: 'POST' })
+      const data = await res.json()
+      setResetMsg({
+        id: user.id,
+        ok: res.ok,
+        text: res.ok
+          ? `Reset link sent${user.discordId ? ' via Discord DM' : ' via email'}.`
+          : data.error ?? 'Failed to send reset.',
+      })
+    } catch {
+      setResetMsg({ id: user.id, ok: false, text: 'Connection error.' })
+    }
+    setResetting(null)
+    setTimeout(() => setResetMsg(null), 5000)
+  }
+
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold text-white mb-6">Users <span className="text-zinc-600 font-normal text-base ml-1">{users.length}</span></h1>
+
+      {resetMsg && (
+        <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm border ${resetMsg.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+          {resetMsg.text}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-zinc-500 text-sm">Loading...</p>
@@ -48,6 +78,7 @@ export default function AdminUsers() {
             <thead>
               <tr className="border-b border-zinc-800">
                 <th className="text-left px-4 py-3 text-zinc-500 font-medium">User</th>
+                <th className="text-left px-4 py-3 text-zinc-500 font-medium">Discord</th>
                 <th className="text-left px-4 py-3 text-zinc-500 font-medium">Shop</th>
                 <th className="text-left px-4 py-3 text-zinc-500 font-medium">Verified</th>
                 <th className="text-left px-4 py-3 text-zinc-500 font-medium">Joined</th>
@@ -59,8 +90,24 @@ export default function AdminUsers() {
                 <tr key={user.id} className="border-b border-zinc-800/50 hover:bg-white/[0.02]">
                   <td className="px-4 py-3">
                     <p className="text-white font-medium">{user.username}</p>
-                    <p className="text-zinc-500 text-xs">{user.email}</p>
+                    <p className="text-zinc-500 text-xs">{user.email ?? <span className="text-zinc-700">no email</span>}</p>
                     {user.isAdmin && <span className="inline-flex items-center gap-1 text-indigo-400 text-xs mt-0.5"><ShieldCheck size={10} /> Admin</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {user.discordId ? (
+                      <div className="flex items-center gap-2">
+                        {user.discordAvatar && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={user.discordAvatar} alt="" className="w-6 h-6 rounded-full" />
+                        )}
+                        <div>
+                          <p className="text-zinc-300 text-xs">{user.discordUsername ?? '—'}</p>
+                          <p className="text-zinc-600 text-xs font-mono">{user.discordId}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-700 text-xs">Not connected</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {user.shop ? (
@@ -82,6 +129,14 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
+                      <button
+                        onClick={() => handleResetPassword(user)}
+                        disabled={resetting === user.id || (!user.discordId && !user.email)}
+                        title={user.discordId ? 'Send password reset via Discord DM' : user.email ? 'Send password reset via email' : 'No contact method'}
+                        className="p-1.5 rounded-lg text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        {user.discordId ? <MessageSquare size={14} /> : <KeyRound size={14} />}
+                      </button>
                       <button
                         onClick={() => toggleAdmin(user)}
                         title={user.isAdmin ? 'Remove admin' : 'Make admin'}

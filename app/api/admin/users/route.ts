@@ -9,6 +9,7 @@ export async function GET() {
     select: {
       id: true, email: true, username: true, isAdmin: true,
       emailVerified: true, createdAt: true,
+      discordId: true, discordUsername: true, discordAvatar: true,
       _count: { select: { purchases: true } },
       shop: { select: { id: true, name: true, slug: true, _count: { select: { products: true } } } },
     },

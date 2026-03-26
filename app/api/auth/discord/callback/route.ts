@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
         where: { id: user.id },
         data: {
           discordId: discordUser.id,
+          discordUsername: discordUser.username,
           discordAvatar: avatarUrl,
           emailVerified: true,
         },
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
           password: null,
           emailVerified: true,
           discordId: discordUser.id,
+          discordUsername: discordUser.username,
           discordAvatar: avatarUrl,
         },
       })

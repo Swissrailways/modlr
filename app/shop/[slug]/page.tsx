@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import ProductCard, { type ProductItem } from '@/components/ProductCard'
-import { Store, Loader2, PackageOpen, Calendar, Download, Package } from 'lucide-react'
+import { Store, Loader2, PackageOpen, Calendar, Download, Package, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 interface ShopData {
   id: number
@@ -88,6 +89,14 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
       <Navbar />
+
+      {/* Back to marketplace */}
+      <div className="max-w-7xl mx-auto px-4 pt-4">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
+          <ArrowLeft size={14} />
+          Back to Marketplace
+        </Link>
+      </div>
 
       {/* Banner */}
       <div className={`relative bg-gradient-to-br ${gradient} overflow-hidden`} style={{ minHeight: '220px' }}>

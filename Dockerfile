@@ -25,6 +25,11 @@ RUN npm run build
 RUN cp -r .next/static .next/standalone/.next/static
 RUN if [ -d "public" ]; then cp -r public .next/standalone/public; fi
 
+# Ensure key packages are available in standalone node_modules
+RUN mkdir -p .next/standalone/node_modules && \
+    cp -r node_modules/stripe .next/standalone/node_modules/stripe && \
+    cp -r node_modules/bcryptjs .next/standalone/node_modules/bcryptjs
+
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0

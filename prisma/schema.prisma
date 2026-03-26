@@ -15,7 +15,9 @@ model User {
   emailVerified            Boolean                   @default(false)
   isAdmin                  Boolean                   @default(false)
   discordId                String?                   @unique
+  discordUsername          String?
   discordAvatar            String?
+  usernameChangedAt        DateTime?
   createdAt                DateTime                  @default(now())
   shop                     Shop?
   purchases                Purchase[]
