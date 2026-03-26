@@ -37,20 +37,44 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const existing = await prisma.user.findFirst({
-      where: { OR: [{ email: email.trim().toLowerCase() }, { username: username.trim().toLowerCase() }] },
+    const cleanEmail = email.trim().toLowerCase()
+    const cleanUsername = username.trim().toLowerCase()
+
+    // Check for existing account by email
+    const existingByEmail = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+      include: { emailVerificationTokens: { orderBy: { createdAt: 'desc' }, take: 1 } },
     })
-    if (existing) {
-      return Response.json({ error: 'Email or username already taken' }, { status: 409 })
+
+    if (existingByEmail) {
+      if (!existingByEmail.emailVerified) {
+        const latestToken = existingByEmail.emailVerificationTokens[0]
+        const tokenExpired = !latestToken || latestToken.expiresAt < new Date()
+
+        if (tokenExpired) {
+          // Ghost account — verification window passed, delete and allow re-registration
+          await prisma.user.delete({ where: { id: existingByEmail.id } })
+        } else {
+          // Unverified but token still valid — resend the email
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
+          const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${latestToken.token}`
+          await sendVerificationEmail(cleanEmail, verifyUrl)
+          return Response.json({ requiresVerification: true, email: cleanEmail }, { status: 200 })
+        }
+      } else {
+        return Response.json({ error: 'An account with this email already exists' }, { status: 409 })
+      }
+    }
+
+    // Check username separately
+    const existingByUsername = await prisma.user.findUnique({ where: { username: cleanUsername } })
+    if (existingByUsername) {
+      return Response.json({ error: 'This username is already taken' }, { status: 409 })
     }
 
     const hashed = await bcrypt.hash(password, 12)
     const user = await prisma.user.create({
-      data: {
-        email: email.trim().toLowerCase(),
-        username: username.trim().toLowerCase(),
-        password: hashed,
-      },
+      data: { email: cleanEmail, username: cleanUsername, password: hashed },
     })
 
     // Create verification token (24 hour expiry)
