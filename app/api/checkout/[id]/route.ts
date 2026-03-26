@@ -10,12 +10,14 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const user = await getCurrentUser()
+  console.log('[checkout] user:', user?.id ?? 'none')
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  try {
     const { id } = await params
     const productId = parseInt(id)
+    console.log('[checkout] productId:', productId)
     if (isNaN(productId) || productId <= 0) {
       return Response.json({ error: 'Invalid product ID' }, { status: 400 })
     }
@@ -24,12 +26,14 @@ export async function POST(
       where: { id: productId, published: true },
       include: { shop: true },
     })
+    console.log('[checkout] product:', product?.id ?? 'not found')
     if (!product) return Response.json({ error: 'Product not found' }, { status: 404 })
 
     // Check if already purchased
     const existing = await prisma.purchase.findUnique({
       where: { userId_productId: { userId: user.id, productId } },
     })
+    console.log('[checkout] existing purchase:', !!existing)
     if (existing) return Response.json({ error: 'Already purchased' }, { status: 409 })
 
     // Free product — create purchase directly, no payment needed
@@ -41,6 +45,7 @@ export async function POST(
     }
 
     // Paid product — Stripe must be configured and seller must have Connect set up
+    console.log('[checkout] stripeConfigured:', stripeConfigured())
     if (!stripeConfigured()) {
       return Response.json({ error: 'Payments are not available right now. Please try again later.' }, { status: 503 })
     }
@@ -85,7 +90,7 @@ export async function POST(
     return Response.json({ url: session.url })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('POST /api/checkout/[id] error:', msg)
+    console.error('[checkout] CRASH:', msg)
     if (msg.includes('STRIPE_SECRET_KEY')) {
       return Response.json({ error: 'Payments are not available right now.' }, { status: 503 })
     }
