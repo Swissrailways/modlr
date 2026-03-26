@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { sendDiscordDM } from '@/lib/discord'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
@@ -42,7 +43,14 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const resetUrl = `${baseUrl}/reset-password?token=${token}`
 
-  await sendPasswordResetEmail(user.email, resetUrl)
+  if (user.discordId) {
+    await sendDiscordDM(
+      user.discordId,
+      `🔐 **Modlr Password Reset**\n\nClick the link below to reset your password. This link expires in **1 hour**.\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this message.`
+    )
+  } else if (user.email) {
+    await sendPasswordResetEmail(user.email, resetUrl)
+  }
 
   return NextResponse.json({ ok: true })
 }
