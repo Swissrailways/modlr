@@ -22,21 +22,17 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const { addItem, isInCart } = useCart()
   const [buying, setBuying] = useState(false)
-  const [buyingPaypal, setBuyingPaypal] = useState(false)
   const [buyError, setBuyError] = useState('')
   const [previewIdx, setPreviewIdx] = useState(0)
   const [user, setUser] = useState<{ id: number } | null>(null)
-  const [paypalAvailable, setPaypalAvailable] = useState(false)
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/products/${id}`).then(r => r.ok ? r.json() : null),
       fetch('/api/auth/me').then(r => r.ok ? r.json() : null),
-      fetch('/api/checkout/paypal/status').then(r => r.ok ? r.json() : { available: false }),
-    ]).then(([prod, u, paypal]) => {
+    ]).then(([prod, u]) => {
       setProduct(prod)
       setUser(u)
-      setPaypalAvailable(paypal?.available ?? false)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [id])
@@ -62,30 +58,6 @@ export default function ProductPage() {
     } catch {
       setBuyError('Could not reach server. Please try again.')
       setBuying(false)
-    }
-  }
-
-  async function handlePayPal() {
-    if (!user) { router.push('/login'); return }
-    setBuyingPaypal(true)
-    setBuyError('')
-    try {
-      const res = await fetch(`/api/checkout/paypal/${id}`, { method: 'POST' })
-      let data: Record<string, unknown> = {}
-      try { data = await res.json() } catch { /* non-JSON response */ }
-      if (!res.ok) { setBuyError((data.error as string) || `PayPal error ${res.status}`); setBuyingPaypal(false); return }
-      if (data.free) {
-        setProduct(p => p ? { ...p, purchased: true } : p)
-        setBuyingPaypal(false)
-      } else if (data.url) {
-        window.location.href = data.url as string
-      } else {
-        setBuyError('Unexpected PayPal response. Please try again.')
-        setBuyingPaypal(false)
-      }
-    } catch {
-      setBuyError('Could not reach PayPal. Please try again.')
-      setBuyingPaypal(false)
     }
   }
 
@@ -296,30 +268,14 @@ export default function ProductPage() {
                       <div className="flex-1 h-px bg-zinc-800" />
                     </div>
 
-                    {/* Stripe */}
                     <button
                       onClick={handleBuy}
-                      disabled={buying || buyingPaypal}
+                      disabled={buying}
                       className="btn-glow flex items-center justify-center gap-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all text-sm mb-2"
                     >
                       {buying ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
                       {buying ? 'Processing…' : `Pay with Card — ${formatPrice(product.price, product.currency)}`}
                     </button>
-
-                    {/* PayPal */}
-                    {paypalAvailable && (
-                      <button
-                        onClick={handlePayPal}
-                        disabled={buying || buyingPaypal}
-                        className="flex items-center justify-center gap-2 w-full bg-[#FFC439] hover:bg-[#f0b429] disabled:opacity-50 text-[#003087] font-bold py-3 rounded-xl transition-all text-sm mb-2"
-                      >
-                        {buyingPaypal
-                          ? <Loader2 size={16} className="animate-spin text-[#003087]" />
-                          : <span className="font-extrabold tracking-tight">Pay<span className="text-[#009cde]">Pal</span></span>
-                        }
-                        {!buyingPaypal && <span>— {formatPrice(product.price, product.currency)}</span>}
-                      </button>
-                    )}
 
                     {!user && (
                       <p className="text-zinc-600 text-xs text-center">

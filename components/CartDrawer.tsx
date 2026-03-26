@@ -14,17 +14,16 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ open, onClose }: CartDrawerProps) {
   const { items, removeItem, clearCart, total, count } = useCart()
-  const [checkingOut, setCheckingOut] = useState<'stripe' | 'paypal' | null>(null)
+  const [checkingOut, setCheckingOut] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
 
-  async function handleCheckout(method: 'stripe' | 'paypal') {
+  async function handleCheckout() {
     if (items.length === 0) return
-    setCheckingOut(method)
+    setCheckingOut(true)
     setError('')
     try {
-      const endpoint = method === 'stripe' ? '/api/checkout/cart' : '/api/checkout/paypal/cart'
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/checkout/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productIds: items.map(i => i.productId) }),
@@ -44,7 +43,7 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
       }
     } catch {
       setError('Connection error. Please try again.')
-      setCheckingOut(null)
+      setCheckingOut(false)
     }
   }
 
@@ -141,27 +140,13 @@ export default function CartDrawer({ open, onClose }: CartDrawerProps) {
               <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
             )}
 
-            {/* Stripe */}
             <button
-              onClick={() => handleCheckout('stripe')}
-              disabled={!!checkingOut}
+              onClick={handleCheckout}
+              disabled={checkingOut}
               className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-all text-sm"
             >
-              {checkingOut === 'stripe' ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
-              {checkingOut === 'stripe' ? 'Redirecting…' : 'Pay with Card'}
-            </button>
-
-            {/* PayPal */}
-            <button
-              onClick={() => handleCheckout('paypal')}
-              disabled={!!checkingOut}
-              className="flex items-center justify-center gap-2 w-full bg-[#FFC439] hover:bg-[#f0b429] disabled:opacity-50 text-[#003087] font-bold py-3 rounded-xl transition-all text-sm"
-            >
-              {checkingOut === 'paypal'
-                ? <Loader2 size={16} className="animate-spin text-[#003087]" />
-                : <span className="font-extrabold tracking-tight">Pay<span className="text-[#009cde]">Pal</span></span>
-              }
-              {checkingOut !== 'paypal' && <span className="font-semibold">Checkout</span>}
+              {checkingOut ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
+              {checkingOut ? 'Redirecting…' : 'Pay with Card'}
             </button>
 
             {/* Clear cart */}
