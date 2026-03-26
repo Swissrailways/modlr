@@ -1,8 +1,10 @@
-const BREVO_API_KEY = process.env.BREVO_API_KEY
-const SMTP_FROM = process.env.SMTP_FROM ?? 'noreply@modlr.app'
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Modlr'
+const APP_NAME = 'Modlr'
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  // Read at call-time so Railway runtime env vars are picked up (not build-time)
+  const BREVO_API_KEY = process.env.BREVO_API_KEY
+  const SMTP_FROM = process.env.SMTP_FROM ?? 'scriptsswiss@gmail.com'
+
   if (!BREVO_API_KEY) {
     console.log(`\n========== EMAIL (no Brevo API key configured) ==========`)
     console.log(`To: ${to}\nSubject: ${subject}`)
