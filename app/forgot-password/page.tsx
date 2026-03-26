@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle } from 'lucide-react'
 import { ModlrMark } from '@/components/ModlrLogo'
 
 function DiscordIcon() {
@@ -18,36 +18,13 @@ function ForgotPasswordContent() {
   const searchParams = useSearchParams()
   const discordParam = searchParams.get('discord')
 
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (discordParam === 'sent') setSent(true)
-    if (discordParam === 'not_found') setError('No Modlr account is linked to that Discord. Try using your email instead.')
+    if (discordParam === 'not_found') setError('No Modlr account is linked to that Discord.')
   }, [discordParam])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      if (res.status === 429) {
-        setError('Too many requests. Please wait a few minutes and try again.')
-      } else {
-        setSent(true)
-      }
-    } catch {
-      setError('Connection error. Please try again.')
-    }
-    setLoading(false)
-  }
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
@@ -60,7 +37,7 @@ function ForgotPasswordContent() {
             <ModlrMark size={30} />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Forgot password?</h1>
-          <p className="text-zinc-500 text-sm mt-1.5">Reset via Discord DM or email</p>
+          <p className="text-zinc-500 text-sm mt-1.5">We'll send you a reset link via Discord DM</p>
         </div>
 
         <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
@@ -69,16 +46,15 @@ function ForgotPasswordContent() {
               <CheckCircle size={40} className="text-green-400 mx-auto mb-3" />
               <p className="text-white font-medium">Reset link sent!</p>
               <p className="text-zinc-400 text-sm mt-2">
-                {discordParam === 'sent'
-                  ? 'Check your Discord DMs for the password reset link.'
-                  : <>If an account exists for <strong className="text-white">{email}</strong>, you'll receive a reset link shortly.</>
-                }
+                Check your Discord DMs for the password reset link.
               </p>
               <p className="text-zinc-500 text-xs mt-3">Link expires in 1 hour.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Discord button */}
+              {error && (
+                <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>
+              )}
               <a
                 href="/api/auth/discord?state=password_reset"
                 className="w-full flex items-center justify-center gap-2.5 bg-[#5865F2] hover:bg-[#4752c4] text-white font-semibold py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-[#5865F2]/20"
@@ -86,42 +62,7 @@ function ForgotPasswordContent() {
                 <DiscordIcon />
                 Get reset link via Discord DM
               </a>
-
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-zinc-800" />
-                <span className="text-zinc-600 text-xs">or use email</span>
-                <div className="flex-1 h-px bg-zinc-800" />
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email address</label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      required
-                      autoFocus
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500/70 focus:ring-1 focus:ring-indigo-500/30 text-sm transition-all"
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || !email}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition-all text-sm shadow-lg shadow-indigo-600/20"
-                >
-                  {loading ? 'Sending...' : 'Send Reset Link'}
-                </button>
-              </form>
+              <p className="text-zinc-600 text-xs text-center">You must have Discord linked to your account</p>
             </div>
           )}
 
