@@ -154,7 +154,7 @@ function NavbarInner() {
                 {t.nav.login}
               </Link>
               <Link
-                href="/register"
+                href="/login"
                 className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-lg shadow-indigo-600/25 hover:shadow-indigo-500/40"
               >
                 {t.nav.signup}
