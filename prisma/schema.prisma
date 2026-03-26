@@ -52,18 +52,19 @@ model EmailVerificationToken {
 }
 
 model Shop {
-  id                    Int       @id @default(autoincrement())
-  userId                Int       @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    Int             @id @default(autoincrement())
+  userId                Int             @unique
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                  String
-  slug                  String    @unique
+  slug                  String          @unique
   description           String?
   logoPath              String?
   bannerPath            String?
   stripeAccountId       String?
-  stripeAccountComplete Boolean   @default(false)
+  stripeAccountComplete Boolean         @default(false)
   products              Product[]
-  createdAt             DateTime  @default(now())
+  earnings              SellerEarning[]
+  createdAt             DateTime        @default(now())
 }
 
 model Category {
@@ -80,13 +81,13 @@ model Tag {
 }
 
 model Product {
-  id            Int            @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   shopId        Int
-  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop          Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
   name          String
   description   String?
-  price         Int            @default(0)
-  currency      String         @default("usd")
+  price         Int             @default(0)
+  currency      String          @default("usd")
   filePath      String
   fileName      String
   fileSize      BigInt
@@ -94,11 +95,12 @@ model Product {
   previewImages ProductImage[]
   tags          ProductTag[]
   categoryId    Int?
-  category      Category?      @relation(fields: [categoryId], references: [id])
+  category      Category?       @relation(fields: [categoryId], references: [id])
   purchases     Purchase[]
-  published     Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  earnings      SellerEarning[]
+  published     Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
 
 model ProductImage {
@@ -119,15 +121,32 @@ model ProductTag {
 }
 
 model Purchase {
-  id              Int      @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   userId          Int
-  user            User     @relation(fields: [userId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
   productId       Int
-  product         Product  @relation(fields: [productId], references: [id])
+  product         Product        @relation(fields: [productId], references: [id])
   amount          Int
-  currency        String   @default("usd")
-  stripeSessionId String?  @unique
-  createdAt       DateTime @default(now())
+  currency        String         @default("usd")
+  stripeSessionId String?        @unique
+  sellerEarning   SellerEarning?
+  createdAt       DateTime       @default(now())
 
   @@unique([userId, productId])
+}
+
+model SellerEarning {
+  id               Int       @id @default(autoincrement())
+  shopId           Int
+  shop             Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  productId        Int
+  product          Product   @relation(fields: [productId], references: [id])
+  purchaseId       Int       @unique
+  purchase         Purchase  @relation(fields: [purchaseId], references: [id])
+  amount           Int
+  currency         String    @default("usd")
+  paid             Boolean   @default(false)
+  paidAt           DateTime?
+  stripeTransferId String?
+  createdAt        DateTime  @default(now())
 }

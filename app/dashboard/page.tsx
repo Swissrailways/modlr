@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
-import { Plus, Store, Package, Pencil, Trash2, Eye, EyeOff, Loader2, CreditCard, CheckCircle, AlertTriangle, Download, ExternalLink, Settings } from 'lucide-react'
+import { Plus, Store, Package, Pencil, Trash2, Eye, EyeOff, Loader2, CreditCard, CheckCircle, AlertTriangle, Download, ExternalLink, Settings, Banknote, ArrowDownToLine } from 'lucide-react'
 import { formatPrice } from '@/components/ProductCard'
 import { formatBytes } from '@/lib/utils'
 
@@ -16,6 +16,11 @@ interface Shop {
 
 interface ConnectStatus {
   connected: boolean; complete: boolean
+}
+
+interface PayoutStatus {
+  pending: number; totalEarned: number; currency: string
+  connected: boolean; payoutsEnabled: boolean
 }
 
 interface Product {
@@ -30,6 +35,8 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [connectStatus, setConnectStatus] = useState<ConnectStatus | null>(null)
   const [connectLoading, setConnectLoading] = useState(false)
+  const [payout, setPayout] = useState<PayoutStatus | null>(null)
+  const [cashingOut, setCashingOut] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
 
@@ -47,6 +54,7 @@ export default function DashboardPage() {
       if (data) {
         fetch(`/api/products?shopId=${data.id}&sort=newest`).then(r => r.ok ? r.json() : []).then(setProducts).catch(() => {})
         fetch('/api/shop/connect').then(r => r.ok ? r.json() : null).then(d => { if (d) setConnectStatus(d) }).catch(() => {})
+        fetch('/api/seller/payout').then(r => r.ok ? r.json() : null).then(d => { if (d) setPayout(d) }).catch(() => {})
       }
       setLoading(false)
     }).catch(() => { router.push('/login') })
@@ -60,6 +68,23 @@ export default function DashboardPage() {
       if (data.url) window.location.href = data.url
     } catch {}
     setConnectLoading(false)
+  }
+
+  async function handleCashOut() {
+    setCashingOut(true)
+    try {
+      const res = await fetch('/api/seller/payout', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setPayout(prev => prev ? { ...prev, pending: 0 } : prev)
+        alert(`Success! ${formatPrice(data.transferred, payout?.currency ?? 'usd')} is on its way to your bank.`)
+      } else {
+        alert(data.error ?? 'Cash out failed.')
+      }
+    } catch {
+      alert('Cash out failed.')
+    }
+    setCashingOut(false)
   }
 
   async function togglePublish(product: Product) {
@@ -225,6 +250,47 @@ export default function DashboardPage() {
                 <p className="text-zinc-600 text-xs mt-1">of {products.length} listings</p>
               </div>
             </div>
+
+            {/* Payout Balance */}
+            {payout !== null && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-8">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                      <Banknote size={18} className="text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-0.5">Payout Balance</p>
+                      <p className="text-white text-2xl font-bold tabular-nums">{formatPrice(payout.pending, payout.currency)}</p>
+                      <p className="text-zinc-600 text-xs mt-0.5">{formatPrice(payout.totalEarned, payout.currency)} earned all time · 90% of each sale</p>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {!payout.payoutsEnabled ? (
+                      <button
+                        onClick={handleConnectStripe}
+                        disabled={connectLoading}
+                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                      >
+                        {connectLoading ? <Loader2 size={13} className="animate-spin" /> : <CreditCard size={13} />}
+                        Connect Bank
+                      </button>
+                    ) : payout.pending >= 50 ? (
+                      <button
+                        onClick={handleCashOut}
+                        disabled={cashingOut}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                      >
+                        {cashingOut ? <Loader2 size={13} className="animate-spin" /> : <ArrowDownToLine size={13} />}
+                        Cash Out
+                      </button>
+                    ) : (
+                      <p className="text-zinc-600 text-xs text-right">Min. {formatPrice(50, payout.currency)}<br />to cash out</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Products list */}
             <div className="flex items-center justify-between mb-4">
