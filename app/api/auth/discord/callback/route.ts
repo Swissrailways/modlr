@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    let isNewUser = false
+
     if (user) {
       // Update Discord info on existing account
       user = await prisma.user.update({
@@ -51,7 +53,8 @@ export async function GET(request: NextRequest) {
         },
       })
     } else {
-      // Create new account — generate unique username
+      isNewUser = true
+      // Create new account with temp username — user will choose one on /choose-username
       let username = baseUsername
       let suffix = 0
       while (await prisma.user.findUnique({ where: { username } })) {
@@ -78,7 +81,8 @@ export async function GET(request: NextRequest) {
     session.email = user.email ?? ''
     await session.save()
 
-    return Response.redirect(`${baseUrl}/`)
+    // New users pick their username before continuing
+    return Response.redirect(isNewUser ? `${baseUrl}/choose-username` : `${baseUrl}/`)
   } catch (err) {
     console.error('[Discord OAuth] Error:', err)
     return Response.redirect(`${baseUrl}/login?error=discord_failed`)
