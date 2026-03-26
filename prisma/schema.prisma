@@ -13,11 +13,18 @@ model User {
   username                 String                    @unique
   password                 String
   emailVerified            Boolean                   @default(false)
+  isAdmin                  Boolean                   @default(false)
   createdAt                DateTime                  @default(now())
   shop                     Shop?
   purchases                Purchase[]
   passwordResetTokens      PasswordResetToken[]
   emailVerificationTokens  EmailVerificationToken[]
+}
+
+model ActiveVisitor {
+  id       String   @id @default(cuid())
+  path     String
+  lastSeen DateTime @default(now())
 }
 
 model PasswordResetToken {
