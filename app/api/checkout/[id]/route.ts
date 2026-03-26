@@ -44,24 +44,22 @@ export async function POST(
       return Response.json({ free: true })
     }
 
-    // Paid product — Stripe must be configured and seller must have Connect set up
+    // Paid product — Stripe must be configured
     console.log('[checkout] stripeConfigured:', stripeConfigured())
     if (!stripeConfigured()) {
       return Response.json({ error: 'Payments are not available right now. Please try again later.' }, { status: 503 })
-    }
-    if (!product.shop.stripeAccountId || !product.shop.stripeAccountComplete) {
-      return Response.json({
-        error: 'This seller has not set up payments yet. Please check back later.',
-      }, { status: 402 })
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
       ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
 
+    const isLive = (process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_live_')
+    const hasConnect = !!(product.shop.stripeAccountId && product.shop.stripeAccountComplete)
+
     // Platform fee in cents
     const platformFee = Math.round(product.price * PLATFORM_FEE_PERCENT / 100)
 
-    // Create Stripe Checkout Session with Connect transfer
+    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [{
@@ -75,10 +73,10 @@ export async function POST(
         },
         quantity: 1,
       }],
-        payment_intent_data: {
-        // Only use Connect transfer when using a live key (not test mode)
-        ...((process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_live_') ? {
-          transfer_data: { destination: product.shop.stripeAccountId },
+      payment_intent_data: {
+        // Only split to seller when in live mode AND seller has connected their account
+        ...(isLive && hasConnect ? {
+          transfer_data: { destination: product.shop.stripeAccountId! },
           application_fee_amount: platformFee,
         } : {}),
       },
