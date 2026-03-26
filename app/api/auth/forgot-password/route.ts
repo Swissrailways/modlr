@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       `🔐 **Modlr Password Reset**\n\nClick the link below to reset your password. This link expires in **1 hour**.\n\n${resetUrl}\n\nIf you didn't request this, you can ignore this message.`
     )
   } else if (user.email) {
-    await sendPasswordResetEmail(user.email, resetUrl)
+    await sendPasswordResetEmail(user.email ?? "", resetUrl)
   }
 
   return NextResponse.json({ ok: true })

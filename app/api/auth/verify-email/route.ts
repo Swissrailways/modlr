@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const session = await getSession()
     session.userId = record.user.id
     session.username = record.user.username
-    session.email = record.user.email
+    session.email = record.user.email ?? ''
     await session.save()
 
     return NextResponse.redirect(new URL('/dashboard', request.url))

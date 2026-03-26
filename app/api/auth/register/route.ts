@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`
     const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`
-    await sendVerificationEmail(user.email, verifyUrl)
+    await sendVerificationEmail(user.email ?? "", verifyUrl)
 
     return Response.json({ requiresVerification: true, email: user.email }, { status: 201 })
   } catch (err) {

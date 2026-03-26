@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
+    if (!user.password) {
+      return Response.json({ error: 'This account uses Discord login. Please sign in with Discord.' }, { status: 401 })
+    }
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
       return Response.json({ error: 'Invalid email or password' }, { status: 401 })
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
     const session = await getSession()
     session.userId = user.id
     session.username = user.username
-    session.email = user.email
+    session.email = user.email ?? ''
     await session.save()
 
     return Response.json({ id: user.id, username: user.username, email: user.email })

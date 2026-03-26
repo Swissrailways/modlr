@@ -25,19 +25,21 @@ export async function DELETE(request: NextRequest) {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  if (!body.password) {
-    return Response.json({ error: 'Password is required to delete your account' }, { status: 400 })
-  }
-
   try {
     const user = await prisma.user.findUnique({ where: { id: session.userId } })
     if (!user) {
       return Response.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const valid = await bcrypt.compare(body.password, user.password)
-    if (!valid) {
-      return Response.json({ error: 'Incorrect password' }, { status: 403 })
+    // Discord-only users have no password — skip password check
+    if (user.password) {
+      if (!body.password) {
+        return Response.json({ error: 'Password is required to delete your account' }, { status: 400 })
+      }
+      const valid = await bcrypt.compare(body.password, user.password)
+      if (!valid) {
+        return Response.json({ error: 'Incorrect password' }, { status: 403 })
+      }
     }
 
     // Cascade deletes shop, products, purchases, tokens via DB relations
