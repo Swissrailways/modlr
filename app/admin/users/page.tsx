@@ -1,20 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, KeyRound, MessageSquare } from 'lucide-react'
+import { Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, KeyRound, MessageSquare, Store } from 'lucide-react'
 
 interface User {
   id: number; email: string | null; username: string; isAdmin: boolean
   emailVerified: boolean; createdAt: string
   discordId: string | null; discordUsername: string | null; discordAvatar: string | null
   _count: { purchases: number }
-  shop: { name: string; slug: string; _count: { products: number } } | null
+  shop: { id: number; name: string; slug: string; _count: { products: number } } | null
 }
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
+  const [deletingShop, setDeletingShop] = useState<number | null>(null)
   const [resetting, setResetting] = useState<number | null>(null)
   const [resetMsg, setResetMsg] = useState<{ id: number; ok: boolean; text: string } | null>(null)
 
@@ -28,6 +29,15 @@ export default function AdminUsers() {
     await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
     setUsers(prev => prev.filter(u => u.id !== id))
     setDeleting(null)
+  }
+
+  async function handleDeleteShop(user: User) {
+    if (!user.shop) return
+    if (!confirm(`Delete shop "${user.shop.name}" and all its products? The user account will remain.`)) return
+    setDeletingShop(user.shop.id)
+    await fetch(`/api/admin/shops/${user.shop.id}`, { method: 'DELETE' })
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, shop: null } : u))
+    setDeletingShop(null)
   }
 
   async function toggleAdmin(user: User) {
@@ -129,6 +139,16 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
+                      {user.shop && (
+                        <button
+                          onClick={() => handleDeleteShop(user)}
+                          disabled={deletingShop === user.shop?.id}
+                          title="Delete shop"
+                          className="p-1.5 rounded-lg text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-50"
+                        >
+                          <Store size={14} />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleResetPassword(user)}
                         disabled={resetting === user.id || (!user.discordId && !user.email)}

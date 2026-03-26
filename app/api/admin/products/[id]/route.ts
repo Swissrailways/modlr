@@ -20,6 +20,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await requireAdmin()) return Response.json({ error: 'Forbidden' }, { status: 403 })
   const { id } = await params
-  await prisma.product.delete({ where: { id: parseInt(id) } })
+  const productId = parseInt(id)
+  // Must delete dependents first (no cascade on Purchase/SellerEarning)
+  await prisma.sellerEarning.deleteMany({ where: { productId } })
+  await prisma.purchase.deleteMany({ where: { productId } })
+  await prisma.product.delete({ where: { id: productId } })
   return Response.json({ success: true })
 }
