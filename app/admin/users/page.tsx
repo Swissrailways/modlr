@@ -51,12 +51,19 @@ export default function AdminUsers() {
   }
 
   async function toggleAdmin(user: User) {
+    const newValue = !user.isAdmin
+    if (!confirm(`${newValue ? 'Grant admin to' : 'Remove admin from'} "${user.username}"?`)) return
     const res = await fetch(`/api/admin/users/${user.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isAdmin: !user.isAdmin }),
+      body: JSON.stringify({ isAdmin: newValue }),
     })
-    if (res.ok) setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isAdmin: !u.isAdmin } : u))
+    if (res.ok) {
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isAdmin: newValue } : u))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data.error ?? 'Failed to update admin status')
+    }
   }
 
   async function handleResetPassword(user: User) {
