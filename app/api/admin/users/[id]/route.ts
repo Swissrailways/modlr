@@ -35,9 +35,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!admin) return Response.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
-  const body = await req.json()
+  const userId = parseInt(id)
+
+  let body: { isAdmin?: unknown }
+  try { body = await req.json() } catch {
+    return Response.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+
+  if (typeof body.isAdmin !== 'boolean') {
+    return Response.json({ error: 'isAdmin must be a boolean' }, { status: 400 })
+  }
+
+  if (userId === admin.id && body.isAdmin === false) {
+    return Response.json({ error: 'Cannot remove your own admin role' }, { status: 400 })
+  }
+
   const user = await prisma.user.update({
-    where: { id: parseInt(id) },
+    where: { id: userId },
     data: { isAdmin: body.isAdmin },
     select: { id: true, isAdmin: true },
   })

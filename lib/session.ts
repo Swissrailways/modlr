@@ -7,8 +7,13 @@ export interface SessionData {
   email?: string
 }
 
+const sessionSecret = process.env.SESSION_SECRET
+if (!sessionSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('SESSION_SECRET environment variable is required in production')
+}
+
 export const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET ?? 'default-secret-change-in-env-file-now!-32ch',
+  password: sessionSecret ?? 'default-secret-change-in-env-file-now!-32ch',
   cookieName: '3d-market-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
