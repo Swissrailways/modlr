@@ -47,6 +47,12 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'Card payments are not available right now.' }, { status: 503 })
     }
 
+    // Stripe requires all line items in the same currency
+    const currencies = new Set(unpurchased.map(p => p.currency))
+    if (currencies.size > 1) {
+      return Response.json({ error: 'All items in your cart must use the same currency.' }, { status: 400 })
+    }
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${req.nextUrl.protocol}//${req.nextUrl.host}`
     const stripe = getStripe()
 
